@@ -1,10 +1,10 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Briefcase, Building2, LogOut, Menu, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Logo from '../Logo'
-import { getUser, clearUser } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 const links = [
   { href: '/employer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -14,17 +14,22 @@ const links = [
 
 export default function EmployerSidebar() {
   const path = usePathname()
+  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [userName, setUserName] = useState('')
+  const [name, setName] = useState('')
   const [company, setCompany] = useState('')
 
   useEffect(() => {
-    const user = getUser()
-    if (user) { setUserName(user.name); setCompany(user.company || '') }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { router.push('/auth/employer/login'); return }
+      supabase.from('profiles').select('name, company').eq('id', user.id).single()
+        .then(({ data }) => { if (data) { setName(data.name || ''); setCompany(data.company || '') } })
+    })
   }, [])
 
-  const initials = (company || userName).split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'E'
-  const handleLogout = () => { clearUser(); window.location.href = '/' }
+  const display = company || name || 'Employer'
+  const initials = display.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0,2) || 'E'
+  const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
   const nav = (
     <nav className="flex flex-col gap-1">
@@ -47,11 +52,11 @@ export default function EmployerSidebar() {
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
             <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold flex-shrink-0">{initials}</div>
             <div className="min-w-0">
-              <div className="text-sm font-medium text-black truncate">{company || userName || 'Employer'}</div>
-              <div className="text-xs text-gray-400 truncate">{userName}</div>
+              <div className="text-sm font-medium text-black truncate">{display}</div>
+              <div className="text-xs text-gray-400 truncate">{name}</div>
             </div>
           </div>
-          <button onClick={handleLogout} className="sidebar-link text-red-500 hover:text-red-600 hover:bg-red-50 w-full">
+          <button onClick={handleLogout} className="sidebar-link text-red-500 hover:text-red-600 hover:bg-red-50 w-full text-left">
             <LogOut size={18}/>Log out
           </button>
         </div>

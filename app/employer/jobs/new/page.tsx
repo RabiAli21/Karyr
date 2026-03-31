@@ -3,21 +3,51 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 export default function PostJob() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
-    title: '', type: 'Internship', location: '', locationType: 'On-site',
-    pay: '', payType: 'Monthly stipend', openings: '1',
-    deadline: '', description: '', requirements: '', skills: '',
+    title:'', type:'Internship', location:'', locationType:'On-site',
+    pay:'', payType:'Monthly stipend', openings:'1',
+    deadline:'', description:'', requirements:'', skills:'',
   })
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1500))
+    setError('')
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setError('Not logged in'); setLoading(false); return }
+
+    // Get company name from profile
+    const { data: profile } = await supabase.from('profiles').select('company, name').eq('id', user.id).single()
+    const company = profile?.company || profile?.name || 'Unknown Company'
+
+    const skillsArray = form.skills ? form.skills.split(',').map(s => s.trim()).filter(Boolean) : []
+
+    const { error: insertError } = await supabase.from('jobs').insert({
+      employer_id: user.id,
+      company,
+      title: form.title,
+      type: form.type,
+      location: form.location || 'Remote',
+      location_type: form.locationType,
+      pay: form.pay,
+      pay_type: form.payType,
+      openings: Number(form.openings),
+      description: form.description,
+      requirements: form.requirements,
+      skills: skillsArray,
+      deadline: form.deadline || null,
+      status: 'active',
+    })
+
+    if (insertError) { setError(insertError.message); setLoading(false); return }
     router.push('/employer/jobs')
   }
 
@@ -32,7 +62,6 @@ export default function PostJob() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Role basics */}
         <div className="card p-6">
           <h2 className="section-title mb-5">Role Details</h2>
           <div className="space-y-4">
@@ -42,12 +71,9 @@ export default function PostJob() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Job type <span className="text-red-400">*</span></label>
+                <label className="label">Job type</label>
                 <select className="select-field" value={form.type} onChange={e=>set('type',e.target.value)}>
-                  <option>Internship</option>
-                  <option>Full-time</option>
-                  <option>Part-time</option>
-                  <option>Contract</option>
+                  <option>Internship</option><option>Full-time</option><option>Part-time</option><option>Contract</option>
                 </select>
               </div>
               <div>
@@ -57,32 +83,26 @@ export default function PostJob() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Work location</label>
-                <input className="input-field" placeholder="e.g. Bangalore, Karnataka" value={form.location} onChange={e=>set('location',e.target.value)}/>
+                <label className="label">Location</label>
+                <input className="input-field" placeholder="e.g. Bangalore" value={form.location} onChange={e=>set('location',e.target.value)}/>
               </div>
               <div>
                 <label className="label">Work mode</label>
                 <select className="select-field" value={form.locationType} onChange={e=>set('locationType',e.target.value)}>
-                  <option>On-site</option>
-                  <option>Remote</option>
-                  <option>Hybrid</option>
+                  <option>On-site</option><option>Remote</option><option>Hybrid</option>
                 </select>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Compensation */}
         <div className="card p-6">
           <h2 className="section-title mb-5">Compensation</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Pay type</label>
               <select className="select-field" value={form.payType} onChange={e=>set('payType',e.target.value)}>
-                <option>Monthly stipend</option>
-                <option>Annual CTC</option>
-                <option>Hourly rate</option>
-                <option>Unpaid</option>
+                <option>Monthly stipend</option><option>Annual CTC</option><option>Hourly rate</option><option>Unpaid</option>
               </select>
             </div>
             <div>
@@ -92,56 +112,39 @@ export default function PostJob() {
           </div>
         </div>
 
-        {/* Description */}
         <div className="card p-6">
           <h2 className="section-title mb-5">Job Description</h2>
           <div className="space-y-4">
             <div>
               <label className="label">About this role <span className="text-red-400">*</span></label>
-              <textarea className="input-field resize-none" rows={5}
-                placeholder="Describe the role, responsibilities, team, and what the candidate will work on..."
-                required value={form.description} onChange={e=>set('description',e.target.value)}/>
+              <textarea className="input-field resize-none" rows={5} placeholder="Describe the role, responsibilities, and what the candidate will work on..." required value={form.description} onChange={e=>set('description',e.target.value)}/>
             </div>
             <div>
               <label className="label">Requirements</label>
-              <textarea className="input-field resize-none" rows={4}
-                placeholder="List qualifications, educational background, experience level expected..."
-                value={form.requirements} onChange={e=>set('requirements',e.target.value)}/>
+              <textarea className="input-field resize-none" rows={3} placeholder="List qualifications, skills, and experience expected..." value={form.requirements} onChange={e=>set('requirements',e.target.value)}/>
             </div>
             <div>
               <label className="label">Required skills</label>
               <input className="input-field" placeholder="e.g. Python, SQL, React (comma-separated)" value={form.skills} onChange={e=>set('skills',e.target.value)}/>
-              <p className="text-xs text-gray-400 mt-1">Separate skills with commas.</p>
             </div>
           </div>
         </div>
 
-        {/* Settings */}
         <div className="card p-6">
           <h2 className="section-title mb-5">Application Settings</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Application deadline</label>
-              <input type="date" className="input-field" value={form.deadline} onChange={e=>set('deadline',e.target.value)}/>
-            </div>
-            <div>
-              <label className="label">Eligible graduation years</label>
-              <select className="select-field">
-                <option>2025 & 2026</option>
-                <option>2025 only</option>
-                <option>2026 only</option>
-                <option>All years</option>
-              </select>
-            </div>
+          <div>
+            <label className="label">Application deadline</label>
+            <input type="date" className="input-field max-w-xs" value={form.deadline} onChange={e=>set('deadline',e.target.value)}/>
           </div>
         </div>
+
+        {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg">{error}</div>}
 
         <div className="flex gap-3 pb-6">
           <button type="submit" disabled={loading} className="btn-primary px-8 py-3">
-            {loading ? 'Publishing job...' : 'Publish Job'}
+            {loading ? 'Publishing...' : 'Publish Job'}
           </button>
-          <button type="button" className="btn-secondary px-6 py-3">Save as Draft</button>
-          <Link href="/employer/jobs" className="btn-ghost px-4 py-3">Cancel</Link>
+          <Link href="/employer/jobs" className="btn-secondary px-6 py-3">Cancel</Link>
         </div>
       </form>
     </div>

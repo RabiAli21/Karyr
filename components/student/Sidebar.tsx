@@ -1,10 +1,10 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Search, FileText, User, LogOut, Menu, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Logo from '../Logo'
-import { getUser, clearUser } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 const links = [
   { href: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -15,18 +15,26 @@ const links = [
 
 export default function StudentSidebar() {
   const path = usePathname()
+  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [userName, setUserName] = useState('')
-  const [userEmail, setUserEmail] = useState('')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
 
   useEffect(() => {
-    const user = getUser()
-    if (user) { setUserName(user.name); setUserEmail(user.email) }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { router.push('/auth/student/login'); return }
+      setEmail(user.email || '')
+      supabase.from('profiles').select('name').eq('id', user.id).single()
+        .then(({ data }) => { if (data?.name) setName(data.name) })
+    })
   }, [])
 
-  const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'
+  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) || '?'
 
-  const handleLogout = () => { clearUser(); window.location.href = '/' }
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
   const nav = (
     <nav className="flex flex-col gap-1">
@@ -48,11 +56,11 @@ export default function StudentSidebar() {
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
             <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold flex-shrink-0">{initials}</div>
             <div className="min-w-0">
-              <div className="text-sm font-medium text-black truncate">{userName || 'Student'}</div>
-              <div className="text-xs text-gray-400 truncate">{userEmail || ''}</div>
+              <div className="text-sm font-medium text-black truncate">{name || 'Student'}</div>
+              <div className="text-xs text-gray-400 truncate">{email}</div>
             </div>
           </div>
-          <button onClick={handleLogout} className="sidebar-link text-red-500 hover:text-red-600 hover:bg-red-50 w-full">
+          <button onClick={handleLogout} className="sidebar-link text-red-500 hover:text-red-600 hover:bg-red-50 w-full text-left">
             <LogOut size={18} />Log out
           </button>
         </div>
@@ -64,8 +72,7 @@ export default function StudentSidebar() {
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-30 bg-black/50" onClick={() => setMobileOpen(false)}>
           <div className="w-64 h-full bg-white p-4 shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="mb-6"><Logo href="/student/dashboard" size="md"/></div>
-            {nav}
+            <div className="mb-6"><Logo href="/student/dashboard" size="md"/></div>{nav}
           </div>
         </div>
       )}

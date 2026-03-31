@@ -1,10 +1,10 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Users, FileBarChart, LogOut, Menu, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Logo from '../Logo'
-import { getUser, clearUser } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 const links = [
   { href: '/college/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -14,17 +14,22 @@ const links = [
 
 export default function CollegeSidebar() {
   const path = usePathname()
+  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [userName, setUserName] = useState('')
-  const [collegeName, setCollegeName] = useState('')
+  const [name, setName] = useState('')
+  const [college, setCollege] = useState('')
 
   useEffect(() => {
-    const user = getUser()
-    if (user) { setUserName(user.name); setCollegeName(user.college || '') }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { router.push('/auth/college/login'); return }
+      supabase.from('profiles').select('name, college').eq('id', user.id).single()
+        .then(({ data }) => { if (data) { setName(data.name || ''); setCollege(data.college || '') } })
+    })
   }, [])
 
-  const initials = (collegeName || userName).split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'C'
-  const handleLogout = () => { clearUser(); window.location.href = '/' }
+  const display = college || name || 'Admin'
+  const initials = display.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0,2) || 'C'
+  const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
   const nav = (
     <nav className="flex flex-col gap-1">
@@ -47,11 +52,11 @@ export default function CollegeSidebar() {
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
             <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold flex-shrink-0">{initials}</div>
             <div className="min-w-0">
-              <div className="text-sm font-medium text-black truncate">{collegeName || userName || 'Admin'}</div>
+              <div className="text-sm font-medium text-black truncate">{display}</div>
               <div className="text-xs text-gray-400 truncate">Career Centre</div>
             </div>
           </div>
-          <button onClick={handleLogout} className="sidebar-link text-red-500 hover:text-red-600 hover:bg-red-50 w-full">
+          <button onClick={handleLogout} className="sidebar-link text-red-500 hover:text-red-600 hover:bg-red-50 w-full text-left">
             <LogOut size={18}/>Log out
           </button>
         </div>

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { FileText, BookMarked, TrendingUp, ArrowRight, Search } from 'lucide-react'
-import { getUser } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 const sampleJobs = [
   { id:'1', title:'Software Engineering Intern', company:'Microsoft', location:'Bangalore', type:'Internship', pay:'₹60,000/mo', logo:'M' },
@@ -12,13 +12,25 @@ const sampleJobs = [
 
 export default function StudentDashboard() {
   const [name, setName] = useState('')
+  const [appCount, setAppCount] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const user = getUser()
-    if (user) setName(user.name)
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase.from('profiles').select('name').eq('id', user.id).single()
+      if (profile?.name) setName(profile.name)
+      const { count } = await supabase.from('applications').select('*', { count: 'exact', head: true }).eq('student_id', user.id)
+      setAppCount(count || 0)
+      setLoading(false)
+    }
+    load()
   }, [])
 
   const firstName = name.split(' ')[0] || 'there'
+
+  if (loading) return <div className="p-6 flex items-center justify-center min-h-[60vh]"><div className="text-gray-400 text-sm">Loading...</div></div>
 
   return (
     <div className="p-6 max-w-5xl">
@@ -27,23 +39,19 @@ export default function StudentDashboard() {
         <p className="text-gray-500 text-sm mt-1">Welcome to Karyr. Let's find you the perfect opportunity.</p>
       </div>
 
-      {/* Profile completion */}
-      <div className="card p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-l-black">
-        <div>
-          <h3 className="font-semibold text-black text-sm">Complete your profile to get started</h3>
-          <p className="text-gray-500 text-xs mt-0.5">Add your resume and skills to get 3x more recruiter views.</p>
-          <div className="mt-2 bg-gray-200 rounded-full h-1.5 w-48">
-            <div className="bg-black h-1.5 rounded-full" style={{width:'20%'}}/>
+      {appCount === 0 && (
+        <div className="card p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-l-black">
+          <div>
+            <h3 className="font-semibold text-black text-sm">Complete your profile to get started</h3>
+            <p className="text-gray-500 text-xs mt-0.5">Add your resume and skills to get 3x more recruiter views.</p>
           </div>
-          <p className="text-xs text-gray-400 mt-1">20% complete</p>
+          <Link href="/student/profile" className="btn-primary text-xs px-4 py-2 whitespace-nowrap">Complete profile →</Link>
         </div>
-        <Link href="/student/profile" className="btn-primary text-xs px-4 py-2 whitespace-nowrap">Complete profile →</Link>
-      </div>
+      )}
 
-      {/* Stats — all zero for new user */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label:'Applications', value:'0', icon:<FileText size={18}/>, sub:'Start applying today' },
+          { label:'Applications', value: appCount.toString(), icon:<FileText size={18}/>, sub: appCount > 0 ? 'Keep applying!' : 'Start applying today' },
           { label:'Saved Jobs', value:'0', icon:<BookMarked size={18}/>, sub:'Browse & save jobs' },
           { label:'Profile Views', value:'0', icon:<TrendingUp size={18}/>, sub:'Complete profile first' },
           { label:'Matches', value:'0', icon:<Search size={18}/>, sub:'Based on your skills' },
@@ -58,7 +66,6 @@ export default function StudentDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Featured jobs */}
         <div className="lg:col-span-3">
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">Jobs to explore</h2>
@@ -81,15 +88,24 @@ export default function StudentDashboard() {
             ))}
           </div>
         </div>
-
-        {/* Right panel — empty state */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="card p-6 text-center">
-            <div className="text-3xl mb-3">📋</div>
-            <h3 className="font-semibold text-black text-sm mb-1">No applications yet</h3>
-            <p className="text-xs text-gray-500 mb-4">Start applying to jobs and track your progress here.</p>
-            <Link href="/student/jobs" className="btn-primary text-xs px-4 py-2">Browse jobs</Link>
-          </div>
+          {appCount === 0 ? (
+            <div className="card p-6 text-center">
+              <div className="text-3xl mb-3">📋</div>
+              <h3 className="font-semibold text-black text-sm mb-1">No applications yet</h3>
+              <p className="text-xs text-gray-500 mb-4">Start applying to jobs and track your progress here.</p>
+              <Link href="/student/jobs" className="btn-primary text-xs px-4 py-2">Browse jobs</Link>
+            </div>
+          ) : (
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="section-title">Applications</h3>
+                <Link href="/student/applications" className="text-xs text-black hover:underline">View all</Link>
+              </div>
+              <div className="text-3xl font-display font-bold text-black">{appCount}</div>
+              <div className="text-xs text-gray-500">Total applications</div>
+            </div>
+          )}
           <div className="card p-5">
             <h3 className="section-title mb-3">Getting started</h3>
             <div className="space-y-3">
@@ -99,8 +115,8 @@ export default function StudentDashboard() {
                 { step:'3', text:'Browse & apply to jobs', href:'/student/jobs' },
                 { step:'4', text:'Track your applications', href:'/student/applications' },
               ].map(item => (
-                <Link key={item.step} href={item.href} className="flex items-center gap-3 py-2 hover:text-black text-gray-600 group">
-                  <span className="w-6 h-6 rounded-full bg-gray-100 group-hover:bg-black group-hover:text-white flex items-center justify-center text-xs font-bold transition-colors">{item.step}</span>
+                <Link key={item.step} href={item.href} className="flex items-center gap-3 py-1.5 text-gray-600 hover:text-black group">
+                  <span className="w-6 h-6 rounded-full bg-gray-100 group-hover:bg-black group-hover:text-white flex items-center justify-center text-xs font-bold transition-colors flex-shrink-0">{item.step}</span>
                   <span className="text-sm">{item.text}</span>
                 </Link>
               ))}

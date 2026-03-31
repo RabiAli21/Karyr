@@ -1,20 +1,24 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { saveUser } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 import Logo from '@/components/Logo'
 
 export default function StudentLogin() {
-  const [loading, setLoading] = useState(false)
-  const [name, setName] = useState('')
+  const router = useRouter()
   const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1000))
-    saveUser({ name: name || email.split('@')[0], email, role: 'student' })
-    window.location.href = '/student/dashboard'
+    setError('')
+
+    const { error: otpError } = await supabase.auth.signInWithOtp({ email })
+    if (otpError) { setError(otpError.message); setLoading(false); return }
+    router.push(`/auth/verify?email=${encodeURIComponent(email)}&role=student`)
   }
 
   return (
@@ -23,29 +27,22 @@ export default function StudentLogin() {
         <div className="text-center mb-8"><Logo href="/" size="md" /></div>
         <div className="card p-8">
           <h1 className="font-display text-2xl font-bold text-black mb-1">Student sign in</h1>
-          <p className="text-gray-500 text-sm mb-6">Welcome back!</p>
+          <p className="text-gray-500 text-sm mb-6">We'll send a verification code to your email.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label">Your name</label>
-              <input className="input-field" placeholder="Your full name" required value={name} onChange={e=>setName(e.target.value)}/>
-            </div>
             <div>
               <label className="label">Email address</label>
               <input type="email" className="input-field" placeholder="you@email.com" required value={email} onChange={e=>setEmail(e.target.value)}/>
             </div>
-            <div>
-              <label className="label">Password</label>
-              <input type="password" className="input-field" placeholder="••••••••" required/>
-            </div>
+            {error && <p className="text-red-500 text-xs">{error}</p>}
             <button type="submit" disabled={loading} className="btn-primary w-full py-3">
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? 'Sending code...' : 'Send Verification Code'}
             </button>
           </form>
           <p className="text-center text-sm text-gray-500 mt-4">Don't have an account?{' '}<Link href="/auth/student/signup" className="text-black font-semibold hover:underline">Sign up free</Link></p>
         </div>
         <p className="text-center text-sm text-gray-400 mt-4">
-          <Link href="/auth/employer/login" className="hover:text-black">Employer login</Link>{' · '}
-          <Link href="/auth/college/login" className="hover:text-black">College login</Link>
+          <Link href="/auth/employer/login" className="hover:text-black">Employer</Link>{' · '}
+          <Link href="/auth/college/login" className="hover:text-black">College</Link>
         </p>
       </div>
     </div>
