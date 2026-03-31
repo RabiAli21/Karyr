@@ -1,15 +1,22 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { saveUser } from '@/lib/auth'
 import Logo from '@/components/Logo'
 
 export default function EmployerSignup() {
   const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState({ name:'', company:'', website:'', email:'', password:'' })
+  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true)
-    await new Promise(r => setTimeout(r, 1200))
+    e.preventDefault()
+    setLoading(true)
+    await new Promise(r => setTimeout(r, 1000))
+    saveUser({ name: form.name, email: form.email, role: 'employer', company: form.company })
     window.location.href = '/employer/dashboard'
   }
+
   return (
     <div className="min-h-screen flex">
       <div className="hidden lg:flex w-1/2 bg-black flex-col justify-between p-12">
@@ -30,26 +37,11 @@ export default function EmployerSignup() {
           <h1 className="font-display text-2xl font-bold text-black mb-1">Create employer account</h1>
           <p className="text-gray-500 text-sm mb-6">Start hiring the best students today.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label">Recruiter name</label>
-              <input className="input-field" placeholder="Your full name" required/>
-            </div>
-            <div>
-              <label className="label">Company name</label>
-              <input className="input-field" placeholder="e.g. TechCorp Pvt Ltd" required/>
-            </div>
-            <div>
-              <label className="label">Company website</label>
-              <input type="url" className="input-field" placeholder="https://yourcompany.com" required/>
-            </div>
-            <div>
-              <label className="label">Work email</label>
-              <input type="email" className="input-field" placeholder="you@company.com" required/>
-            </div>
-            <div>
-              <label className="label">Password</label>
-              <input type="password" className="input-field" placeholder="Min. 8 characters" minLength={8} required/>
-            </div>
+            <div><label className="label">Your name</label><input className="input-field" placeholder="Your full name" required value={form.name} onChange={e=>set('name',e.target.value)}/></div>
+            <div><label className="label">Company name</label><input className="input-field" placeholder="e.g. TechCorp Pvt Ltd" required value={form.company} onChange={e=>set('company',e.target.value)}/></div>
+            <div><label className="label">Company website</label><input type="url" className="input-field" placeholder="https://yourcompany.com" value={form.website} onChange={e=>set('website',e.target.value)}/></div>
+            <div><label className="label">Work email</label><input type="email" className="input-field" placeholder="you@company.com" required value={form.email} onChange={e=>set('email',e.target.value)}/></div>
+            <div><label className="label">Password</label><input type="password" className="input-field" placeholder="Min. 8 characters" minLength={8} required value={form.password} onChange={e=>set('password',e.target.value)}/></div>
             <button type="submit" disabled={loading} className="btn-primary w-full py-3">
               {loading ? 'Creating account...' : 'Create Employer Account'}
             </button>

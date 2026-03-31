@@ -13,14 +13,11 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Logo href="/" size="md" />
-
           <nav className="hidden md:flex items-center gap-1">
             <Link href="/student/jobs" className="btn-ghost text-sm">Find Jobs</Link>
             <Link href="/about" className="btn-ghost text-sm">About</Link>
           </nav>
-
           <div className="hidden md:flex items-center gap-3">
-            {/* Sign in dropdown */}
             <div className="relative">
               <button onClick={() => setRoleOpen(!roleOpen)} className="btn-ghost text-sm flex items-center gap-1.5">
                 Sign in <ChevronDown size={14} />
@@ -35,13 +32,11 @@ export default function Navbar() {
             </div>
             <Link href="/auth/student/signup" className="btn-primary text-sm">Get started</Link>
           </div>
-
           <button className="md:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setOpen(!open)}>
             {open ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
-
       {open && (
         <div className="md:hidden border-t border-gray-200 bg-white px-4 py-4 space-y-1">
           <Link href="/auth/student/login" className="block px-4 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm" onClick={() => setOpen(false)}>Student Login</Link>

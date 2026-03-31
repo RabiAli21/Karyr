@@ -11,7 +11,7 @@ export default function Footer() {
             <p className="text-sm text-gray-500 mt-3">Campus placement, reimagined.</p>
           </div>
           <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-            {[['For Students', '/auth/student/signup'], ['For Employers', '/auth/employer/signup'], ['For Colleges', '/auth/college/login'], ['About', '/about']].map(([label, href]) => (
+            {[['For Students','/auth/student/signup'],['For Employers','/auth/employer/signup'],['For Colleges','/auth/college/login'],['About','/about']].map(([label,href]) => (
               <Link key={label} href={href} className="text-gray-500 hover:text-white transition-colors">{label}</Link>
             ))}
           </div>

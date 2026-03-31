@@ -2,8 +2,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Search, FileText, User, LogOut, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Logo from '../Logo'
+import { getUser, clearUser } from '@/lib/auth'
 
 const links = [
   { href: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -15,6 +16,18 @@ const links = [
 export default function StudentSidebar() {
   const path = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [userName, setUserName] = useState('')
+  const [userEmail, setUserEmail] = useState('')
+
+  useEffect(() => {
+    const user = getUser()
+    if (user) { setUserName(user.name); setUserEmail(user.email) }
+  }, [])
+
+  const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'
+
+  const handleLogout = () => { clearUser(); window.location.href = '/' }
+
   const nav = (
     <nav className="flex flex-col gap-1">
       {links.map(({ href, icon: Icon, label }) => (
@@ -25,6 +38,7 @@ export default function StudentSidebar() {
       ))}
     </nav>
   )
+
   return (
     <>
       <aside className="hidden md:flex flex-col w-60 min-h-screen bg-white border-r border-gray-200 p-4 fixed top-0 left-0 z-30">
@@ -32,13 +46,15 @@ export default function StudentSidebar() {
         {nav}
         <div className="mt-auto pt-4 border-t border-gray-100">
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">A</div>
+            <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold flex-shrink-0">{initials}</div>
             <div className="min-w-0">
-              <div className="text-sm font-medium text-black truncate">Alex Kumar</div>
-              <div className="text-xs text-gray-400">Student</div>
+              <div className="text-sm font-medium text-black truncate">{userName || 'Student'}</div>
+              <div className="text-xs text-gray-400 truncate">{userEmail || ''}</div>
             </div>
           </div>
-          <Link href="/" className="sidebar-link text-red-500 hover:text-red-600 hover:bg-red-50"><LogOut size={18} />Log out</Link>
+          <button onClick={handleLogout} className="sidebar-link text-red-500 hover:text-red-600 hover:bg-red-50 w-full">
+            <LogOut size={18} />Log out
+          </button>
         </div>
       </aside>
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-40">
@@ -47,8 +63,9 @@ export default function StudentSidebar() {
       </div>
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-30 bg-black/50" onClick={() => setMobileOpen(false)}>
-          <div className="w-64 h-full bg-white p-4 shadow-xl" onClick={e=>e.stopPropagation()}>
-            <div className="mb-6"><Logo href="/student/dashboard" size="md"/></div>{nav}
+          <div className="w-64 h-full bg-white p-4 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="mb-6"><Logo href="/student/dashboard" size="md"/></div>
+            {nav}
           </div>
         </div>
       )}
