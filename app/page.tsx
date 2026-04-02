@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { ArrowRight, Users, Building2, GraduationCap, Briefcase, CheckCircle, TrendingUp } from 'lucide-react'
-import Logo from '@/components/Logo'
+import { ArrowRight, Users, Building2, GraduationCap, Briefcase, CheckCircle } from 'lucide-react'
+import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
 
 const stats = [
   { value: '200K+', label: 'Students registered' },
@@ -18,6 +19,7 @@ const roles = [
     loginHref: '/auth/student/login',
     signupHref: '/auth/student/signup',
     signupLabel: 'Create student account',
+    learnMore: '/students',
     color: 'border-t-4 border-t-black',
   },
   {
@@ -28,6 +30,7 @@ const roles = [
     loginHref: '/auth/employer/login',
     signupHref: '/auth/employer/signup',
     signupLabel: 'Post your first job',
+    learnMore: '/employers',
     color: 'border-t-4 border-t-gray-400',
   },
   {
@@ -38,6 +41,7 @@ const roles = [
     loginHref: '/auth/college/login',
     signupHref: '/auth/college/login',
     signupLabel: 'Access college portal',
+    learnMore: '/colleges',
     color: 'border-t-4 border-t-gray-300',
   },
 ]
@@ -45,18 +49,7 @@ const roles = [
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Logo size="md" />
-            <div className="flex items-center gap-3">
-              <Link href="/auth/student/login" className="btn-ghost text-sm hidden sm:block">Sign in</Link>
-              <Link href="/auth/student/signup" className="btn-primary text-sm">Get started free</Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Hero */}
       <section className="pt-20 pb-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
@@ -127,7 +120,7 @@ export default function LandingPage() {
                   </ul>
                   <div className="space-y-2 mt-auto">
                     <Link href={role.signupHref} className="btn-primary w-full text-center text-sm py-3 block">{role.signupLabel}</Link>
-                    <Link href={role.loginHref} className="btn-ghost w-full text-center text-sm py-2 block text-gray-500">Already have an account? Sign in</Link>
+                    <Link href={role.learnMore} className="btn-ghost w-full text-center text-sm py-2 block text-gray-500">Learn more →</Link>
                   </div>
                 </div>
               )
@@ -174,18 +167,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-black border-t border-gray-900 py-8 px-4">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Logo inverted size="sm" />
-          <div className="flex gap-6 text-sm text-gray-600">
-            {[['Students','/auth/student/signup'],['Employers','/auth/employer/signup'],['Colleges','/auth/college/login'],['About','/about']].map(([l,h])=>(
-              <Link key={l} href={h} className="hover:text-white transition-colors">{l}</Link>
-            ))}
-          </div>
-          <p className="text-xs text-gray-700">© {new Date().getFullYear()} Karyr</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
