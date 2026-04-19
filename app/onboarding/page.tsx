@@ -22,7 +22,7 @@ const ROLES: { id: Role; label: string; description: string; icon: string }[] = 
   {
     id: 'college_admin',
     label: 'Placement Officer',
-    description: 'Manage your college's placements, students, and recruiters',
+    description: "Manage your college's placements, students, and recruiters",
     icon: 'P',
   },
 ]
